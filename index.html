@@ -191,9 +191,9 @@ function loadData(){
 function saveData(){
   try{localStorage.setItem('envios_data',JSON.stringify(envios));}catch(e){}
 }
-function getKey(){return localStorage.getItem('envios_apikey')||'';}
+function getKey(){return (localStorage.getItem('envios_apikey')||'').replace(/[^\x20-\x7E]/g,'').trim();}
 function saveKey(){
-  const k=document.getElementById('api-key-input').value.trim();
+  const k=document.getElementById('api-key-input').value.replace(/[^\x20-\x7E]/g,'').trim();
   if(!k) return;
   localStorage.setItem('envios_apikey',k);
   document.getElementById('api-key-input').value='';
