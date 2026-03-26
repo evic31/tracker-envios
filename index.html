@@ -184,7 +184,7 @@ let envios=[];
 let filtro='all';
 
 function loadData(){
-  try{const d=localStorage.getItem('envios_data');if(d)envios=JSON.parse(d);}catch(e){}
+  try{const d=localStorage.getItem('envios_data');if(d){const p=JSON.parse(d);envios=Array.isArray(p)?p:[];}}catch(e){envios=[];}
   checkKeyStatus();
   render();
 }
@@ -254,7 +254,7 @@ paso: 0=Procesando, 1=En tránsito, 2=En reparto, 3=Entregado`;
       })
     });
     const data=await res.json();
-    const textBlock=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const textBlock=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
     let info;
     try{info=JSON.parse(textBlock.replace(/```json|```/g,'').trim());}
     catch(pe){info={encontrado:false,estado:'No se pudo leer la respuesta',detalle:textBlock.slice(0,200),transportista:'—',fecha:null,paso:e.estado};}
