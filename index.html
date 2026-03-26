@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Envíos">
+<title>Tracker de envíos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#1D9E75;--accent-dark:#0F6E56;
+  --bg:#f9f8f5;--surface:#ffffff;--surface2:#f2f1ee;
+  --text:#1a1a1a;--text2:#6b6a66;--text3:#a0a09a;
+  --border:#e2e1dc;--border2:#cccbc6;
+  --radius:10px;--radius-lg:14px;
+  --green-bg:#EAF3DE;--green-txt:#27500A;
+  --blue-bg:#E6F1FB;--blue-txt:#0C447C;
+  --amber-bg:#FAEEDA;--amber-txt:#633806;
+  --red-bg:#FCEBEB;--red-txt:#791F1F;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2b;
+  --text:#f0efe9;--text2:#a0a09a;--text3:#6b6a66;
+  --border:#3a3a36;--border2:#4a4a46;
+  --green-bg:#173404;--green-txt:#C0DD97;
+  --blue-bg:#042C53;--blue-txt:#B5D4F4;
+  --amber-bg:#412402;--amber-txt:#FAC775;
+  --red-bg:#501313;--red-txt:#F7C1C1;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+.app{max-width:640px;margin:0 auto;padding:1.25rem 1rem 3rem}
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.app-header h1{font-size:20px;font-weight:600}
+.btn-settings{background:none;border:1px solid var(--border2);border-radius:var(--radius);padding:6px 12px;font-size:13px;color:var(--text2);cursor:pointer}
+.btn-settings:hover{border-color:var(--accent);color:var(--accent)}
+
+/* settings panel */
+.settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem;display:none}
+.settings-panel.open{display:block}
+.settings-panel h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.settings-panel p{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5}
+.key-row{display:flex;gap:8px}
+.key-row input{flex:1;padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:monospace;outline:none}
+.key-row input:focus{border-color:var(--accent)}
+.btn-save-key{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn-save-key:hover{background:var(--accent-dark)}
+.key-status{font-size:12px;margin-top:8px}
+.key-status.ok{color:var(--accent)}
+.key-status.missing{color:#A32D2D}
+
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.stat{background:var(--surface2);border-radius:var(--radius);padding:.65rem .75rem}
+.stat-n{font-size:22px;font-weight:600}
+.stat-l{font-size:10px;color:var(--text2);margin-top:1px}
+
+/* form */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row.single{grid-template-columns:1fr}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+input[type=text],select{width:100%;padding:8px 10px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);outline:none;-webkit-appearance:none}
+input[type=text]:focus,select:focus{border-color:var(--accent)}
+.delivery-row{display:flex;gap:1rem;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap}
+.radio-opt{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2)}
+.radio-opt input{accent-color:var(--accent);cursor:pointer;width:16px;height:16px}
+.pickup-input{flex:1;min-width:150px}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:4px}
+.btn-add:hover{background:var(--accent-dark)}
+
+/* filters */
+.filters{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.filter-btn{background:transparent;border:1px solid var(--border2);border-radius:20px;padding:5px 13px;font-size:12px;cursor:pointer;color:var(--text2)}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* list */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:8px;transition:opacity .2s}
+.item.done{opacity:.5}
+.item-top{display:flex;align-items:flex-start;gap:10px}
+.item-body{flex:1;min-width:0}
+.item-title{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.badge-tienda{background:var(--green-bg);color:var(--green-txt)}
+.badge-casa{background:var(--blue-bg);color:var(--blue-txt)}
+.badge-recogida{background:var(--amber-bg);color:var(--amber-txt)}
+.tracking-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.tracking-num{font-size:12px;color:var(--text2);font-family:monospace;background:var(--surface2);padding:3px 8px;border-radius:6px;border:1px solid var(--border)}
+.btn-track{font-size:12px;padding:4px 12px;border:1px solid var(--accent);border-radius:20px;background:transparent;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-track:hover{background:var(--accent);color:#fff}
+.btn-track:disabled{opacity:.45;cursor:not-allowed}
+.spin{display:inline-block;width:10px;height:10px;border:1.5px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.track-result{margin-top:6px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);font-size:13px;line-height:1.6}
+.track-status{font-weight:600;font-size:14px;margin-bottom:3px}
+.track-detail{color:var(--text2);font-size:12px}
+.track-time{font-size:11px;color:var(--text3);margin-top:4px}
+.step-track{display:flex;align-items:center}
+.step{display:flex;align-items:center;gap:4px}
+.step-dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface2);flex-shrink:0}
+.step-dot.active{background:var(--accent);border-color:var(--accent)}
+.step-dot.done-dot{background:#4A8A5A;border-color:#4A8A5A}
+.step-label{font-size:10px;color:var(--text2);white-space:nowrap}
+.step-label.active{color:var(--accent);font-weight:600}
+.step-label.done-lbl{color:#4A8A5A;font-weight:600}
+.step-line{width:18px;height:1.5px;background:var(--border2);flex-shrink:0}
+.step-line.filled{background:#4A8A5A}
+.status-select{font-size:12px;padding:3px 8px;border:1px solid var(--border2);border-radius:20px;background:var(--surface2);color:var(--text);cursor:pointer;outline:none}
+.btn-del{background:transparent;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0 2px;margin-left:auto}
+.btn-del:hover{color:#E24B4A}
+.empty{text-align:center;padding:2.5rem;color:var(--text2);font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <h1>Tracker de envíos</h1>
+    <button class="btn-settings" onclick="toggleSettings()">Ajustes</button>
+  </div>
+
+  <div class="settings-panel" id="settings-panel">
+    <h3>API Key de Anthropic</h3>
+    <p>Necesaria para consultar el estado de los envíos automáticamente. La key se guarda solo en este dispositivo (localStorage).</p>
+    <div class="key-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-...">
+      <button class="btn-save-key" onclick="saveKey()">Guardar</button>
+    </div>
+    <div class="key-status" id="key-status"></div>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n" id="s-proc">0</div><div class="stat-l">Procesando</div></div>
+    <div class="stat"><div class="stat-n" id="s-via">0</div><div class="stat-l">En ruta</div></div>
+    <div class="stat"><div class="stat-n" id="s-done">0</div><div class="stat-l">Entregados</div></div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div><label>Qué he pedido</label><input type="text" id="f-producto" placeholder="Ej: Zapatillas Nike"></div>
+      <div><label>Tienda / web</label><input type="text" id="f-tienda" placeholder="Ej: Amazon, ZARA..."></div>
+    </div>
+    <div class="form-row">
+      <div><label>Nº de seguimiento <span style="font-weight:400">(opcional)</span></label><input type="text" id="f-tracking" placeholder="Ej: ES123456789CN"></div>
+      <div><label>Estado inicial</label>
+        <select id="f-estado">
+          <option value="0">Procesando</option>
+          <option value="1">En tránsito</option>
+          <option value="2">En reparto</option>
+          <option value="3">Entregado</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px"><label style="margin-bottom:6px">Tipo de entrega</label>
+      <div class="delivery-row">
+        <label class="radio-opt"><input type="radio" name="delivery" value="casa" id="r-casa" checked> A casa</label>
+        <label class="radio-opt"><input type="radio" name="delivery" value="recogida" id="r-recogida"> Punto de recogida</label>
+        <div class="pickup-input" id="pickup-wrap" style="display:none">
+          <input type="text" id="f-punto" placeholder="¿Cuál? Ej: Correos, Celer...">
+        </div>
+      </div>
+    </div>
+    <button class="btn-add" id="btn-add">Añadir envío</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-f="all">Todos</button>
+    <button class="filter-btn" data-f="0">Procesando</button>
+    <button class="filter-btn" data-f="1">En tránsito</button>
+    <button class="filter-btn" data-f="2">En reparto</button>
+    <button class="filter-btn" data-f="3">Entregados</button>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<script>
+const STEPS=['Procesando','En tránsito','En reparto','Entregado'];
+let envios=[];
+let filtro='all';
+
+function loadData(){
+  try{const d=localStorage.getItem('envios_data');if(d)envios=JSON.parse(d);}catch(e){}
+  checkKeyStatus();
+  render();
+}
+function saveData(){
+  try{localStorage.setItem('envios_data',JSON.stringify(envios));}catch(e){}
+}
+function getKey(){return localStorage.getItem('envios_apikey')||'';}
+function saveKey(){
+  const k=document.getElementById('api-key-input').value.trim();
+  if(!k) return;
+  localStorage.setItem('envios_apikey',k);
+  document.getElementById('api-key-input').value='';
+  checkKeyStatus();
+}
+function checkKeyStatus(){
+  const k=getKey();
+  const el=document.getElementById('key-status');
+  if(k){el.textContent='API key guardada correctamente.';el.className='key-status ok';}
+  else{el.textContent='Sin API key — el tracking automático no estará disponible.';el.className='key-status missing';}
+}
+function toggleSettings(){
+  const p=document.getElementById('settings-panel');
+  p.classList.toggle('open');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+function stepBar(estado){
+  let h='<div class="step-track">';
+  for(let i=0;i<4;i++){
+    const isDone=i<estado,isActive=i===estado;
+    if(i>0) h+=`<div class="step-line${isDone?' filled':''}"></div>`;
+    h+=`<div class="step">
+      <div class="step-dot${isDone?' done-dot':isActive?' active':''}"></div>
+      <span class="step-label${isDone?' done-lbl':isActive?' active':''}">${STEPS[i]}</span>
+    </div>`;
+  }
+  return h+'</div>';
+}
+
+async function consultarTracking(idx){
+  const e=envios[idx];
+  if(!e.tracking) return;
+  const key=getKey();
+  if(!key){alert('Añade tu API key en Ajustes para usar el tracking automático.');return;}
+  const btn=document.getElementById(`btn-track-${idx}`);
+  const resultDiv=document.getElementById(`track-result-${idx}`);
+  btn.disabled=true;
+  btn.innerHTML='<div class="spin"></div> Consultando...';
+  resultDiv.style.display='block';
+  resultDiv.innerHTML='<div style="color:var(--text2);font-size:13px">Buscando estado del envío...</div>';
+  try{
+    const prompt=`Busca el estado actual del envío con número de seguimiento: ${e.tracking}.
+Producto: ${e.producto}. Tienda: ${e.tienda||'desconocida'}.
+Identifica la transportista por el formato del número y busca el estado real.
+Responde SOLO con un objeto JSON sin markdown con este formato exacto:
+{"transportista":"nombre","estado":"estado breve","detalle":"último evento","fecha":"fecha o null","paso":0-3,"encontrado":true/false}
+paso: 0=Procesando, 1=En tránsito, 2=En reparto, 3=Entregado`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const textBlock=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    let info;
+    try{info=JSON.parse(textBlock.replace(/```json|```/g,'').trim());}
+    catch(pe){info={encontrado:false,estado:'No se pudo leer la respuesta',detalle:textBlock.slice(0,200),transportista:'—',fecha:null,paso:e.estado};}
+    if(info.encontrado){
+      envios[idx].estado=info.paso;
+      envios[idx].trackInfo={transportista:info.transportista,estado:info.estado,detalle:info.detalle,fecha:info.fecha,ts:Date.now()};
+      saveData();
+    }
+    resultDiv.innerHTML=info.encontrado
+      ?`<div class="track-status">${esc(info.estado)}</div>
+         <div class="track-detail">${esc(info.transportista)} · ${esc(info.detalle||'')}</div>
+         ${info.fecha?`<div class="track-time">${esc(info.fecha)}</div>`:''}
+         <div class="track-time">Última consulta: ${new Date().toLocaleString('es-ES')}</div>`
+      :`<div class="track-detail" style="color:var(--text2)">No se encontró información para este número. Verifica que sea correcto.</div>`;
+    render();
+  }catch(err){
+    resultDiv.innerHTML=`<div style="color:#A32D2D;font-size:13px">Error: ${esc(err.message||'Inténtalo de nuevo')}</div>`;
+  }
+  btn.disabled=false;
+  btn.innerHTML='Actualizar';
+}
+
+function render(){
+  const list=document.getElementById('list');
+  let vis=envios;
+  if(filtro!=='all') vis=envios.filter(e=>String(e.estado)===filtro);
+  document.getElementById('s-total').textContent=envios.length;
+  document.getElementById('s-proc').textContent=envios.filter(e=>e.estado===0).length;
+  document.getElementById('s-via').textContent=envios.filter(e=>e.estado===1||e.estado===2).length;
+  document.getElementById('s-done').textContent=envios.filter(e=>e.estado===3).length;
+  if(!vis.length){list.innerHTML=`<div class="empty">Sin envíos${filtro!=='all'?' con este estado':''}</div>`;return;}
+  list.innerHTML=vis.slice().reverse().map(e=>{
+    const idx=envios.indexOf(e);
+    const delBadge=e.delivery==='casa'
+      ?'<span class="badge badge-casa">A casa</span>'
+      :'<span class="badge badge-recogida">Recogida</span>';
+    const puntoBadge=e.delivery==='recogida'&&e.punto?`<span style="font-size:11px;color:var(--text2)">— ${esc(e.punto)}</span>`:'';
+    const trackHtml=e.tracking?`
+      <div class="tracking-row">
+        <span class="tracking-num">${esc(e.tracking)}</span>
+        <button class="btn-track" id="btn-track-${idx}" onclick="consultarTracking(${idx})">Consultar estado</button>
+      </div>
+      <div id="track-result-${idx}" class="track-result" style="display:${e.trackInfo?'block':'none'}">
+        ${e.trackInfo?`<div class="track-status">${esc(e.trackInfo.estado)}</div>
+          <div class="track-detail">${esc(e.trackInfo.transportista)} · ${esc(e.trackInfo.detalle||'')}</div>
+          ${e.trackInfo.fecha?`<div class="track-time">${esc(e.trackInfo.fecha)}</div>`:''}
+          <div class="track-time">Última consulta: ${new Date(e.trackInfo.ts).toLocaleString('es-ES')}</div>`:''}
+      </div>`
+      :'<span style="font-size:11px;color:var(--text3)">Sin nº de seguimiento</span>';
+    return `<div class="item${e.estado===3?' done':''}" data-id="${idx}">
+      <div class="item-top">
+        <div class="item-body">
+          <div class="item-title">${esc(e.producto)}</div>
+          <div class="item-meta"><span class="badge badge-tienda">${esc(e.tienda||'—')}</span>${delBadge}${puntoBadge}</div>
+          ${trackHtml}
+        </div>
+        <button class="btn-del" onclick="del(${idx})" title="Eliminar">×</button>
+      </div>
+      ${stepBar(e.estado)}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+        <label style="font-size:11px;color:var(--text2);margin:0">Estado manual:</label>
+        <select class="status-select" onchange="setEstado(${idx},+this.value)">
+          ${STEPS.map((s,i)=>`<option value="${i}"${i===e.estado?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setEstado(i,v){envios[i].estado=v;saveData();render();}
+function del(i){if(!confirm('¿Eliminar este envío?'))return;envios.splice(i,1);saveData();render();}
+
+document.getElementById('btn-add').addEventListener('click',()=>{
+  const prod=document.getElementById('f-producto').value.trim();
+  if(!prod)return;
+  envios.push({
+    producto:prod,
+    tienda:document.getElementById('f-tienda').value.trim(),
+    tracking:document.getElementById('f-tracking').value.trim(),
+    estado:+document.getElementById('f-estado').value,
+    delivery:document.querySelector('input[name=delivery]:checked').value,
+    punto:document.querySelector('input[name=delivery]:checked').value==='recogida'?document.getElementById('f-punto').value.trim():'',
+    trackInfo:null,ts:Date.now()
+  });
+  ['f-producto','f-tienda','f-tracking','f-punto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-estado').value='0';
+  document.getElementById('r-casa').checked=true;
+  document.getElementById('pickup-wrap').style.display='none';
+  saveData();render();
+});
+
+document.getElementById('r-recogida').addEventListener('change',()=>{document.getElementById('pickup-wrap').style.display='block';});
+document.getElementById('r-casa').addEventListener('change',()=>{document.getElementById('pickup-wrap').style.display='none';});
+document.querySelectorAll('.filter-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');filtro=b.dataset.f;render();
+  });
+});
+
+loadData();
+</script>
+</body>
+</html>
